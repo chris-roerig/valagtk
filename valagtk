@@ -71,6 +71,7 @@ schema_path=/$(echo "$id" | sed 's#\.#/#g')/
 
 projectpath=$destination/$lower
 if $(cp -rp .valagtk $projectpath) ; then
+  mv $projectpath/gitignore $projectpath/.gitignore
   echo "Project copied to $projectpath"
 else
   error "Vala GTK project generation failed. Exiting"
