@@ -59,7 +59,7 @@ if [ "" = "$id" ]; then
 fi
 
 if [ "" = "$destination" ]; then
-  echo -n "Project destination (ex /home/username/Projects): "
+  echo -n -e "Project destination (ex /home/username/Projects): "
   read destination
   create_destination $destination
 fi
@@ -69,7 +69,10 @@ echo
 lower=$(echo "$name" | awk '{print tolower($0)}')
 schema_path=/$(echo "$id" | sed 's#\.#/#g')/
 
-if [ 0 -lt $(cp -rp .valagtk $destination/$lower) ]; then
+projectpath=$destination/$lower
+if $(cp -rp .valagtk $projectpath) ; then
+  echo "Project copied to $projectpath"
+else
   error "Vala GTK project generation failed. Exiting"
 fi
 
@@ -81,7 +84,7 @@ EXTS=(
 )
 
 for ext in "${EXTS[@]}"; do 
-  for f in $(find $lower -name "*.$ext"); do
+  for f in $(find $projectpath -name "*.$ext"); do
     echo -n "Updating $f ..."
     sed -i "s#{APPLICATION_NAME}#$name#g" $f
     sed -i "s#{APPLICATION_ID}#$id#g" $f
@@ -90,7 +93,7 @@ for ext in "${EXTS[@]}"; do
   done
 done
 
-cd $lower && meson build --prefix=/usr
+cd $projectpath && meson build --prefix=/usr
 cd build && sudo ninja install && ./src/$id
  
 exit 0
