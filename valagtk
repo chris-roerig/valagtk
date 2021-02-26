@@ -1,0 +1,96 @@
+#!/bin/bash
+
+# Name of the project
+# Should be formated as a valid Vala class name (CamelCase, only alphanum, don't start with a number, etc)
+# Example: MyApp, FooBar, Johnny5
+# It will be lowercased and used as the projects root folder
+name=$1
+
+# Application ID
+# This is unique name used by the system to identify the app.
+# Should follow the reverse-URL schema: com.foo.bar.project etc
+# The common convention is to use the reverse path of the projects source repository
+# For example: com.github.username.projectname
+id=$2
+
+# Project path
+# Where the generated files will go.
+# Note, the main project folder will be *inside* this path.
+# Example: 
+# name = MyApp, destination = /home/foo/Projects
+# Project will be placed in /hom/foo/Projects/myapp
+destination=$3
+
+function error {
+  echo $1
+  exit 1
+}
+
+function create_destination {
+  destination=$1
+  if [ ! -d $destination ]; then
+    echo -n "$destination doesn't exist. Create it? (Y|N): "
+    read createdir
+
+    if [[ $createdir =~ ^(y|Y) ]]; then
+      echo "Createing $destination"
+
+      if [ 0 -lt $(mkdir -p $destination) ]; then
+        error "Failed to create $destination. Exiting"
+      fi
+    else
+      error "Not creating $destination and exiting"
+    fi
+  fi
+
+  return 0
+}
+
+echo "Creating new Gtk Vala Project"
+
+if [ "" = "$name" ]; then
+  echo -n "Project Name (ex MyApp): "
+  read name
+fi
+
+if [ "" = "$id" ]; then
+  echo -n "Project ID (ex com.github.username.project): "
+  read id
+fi
+
+if [ "" = "$destination" ]; then
+  echo -n "Project destination (ex /home/username/Projects): "
+  read destination
+  create_destination $destination
+fi
+
+echo
+
+lower=$(echo "$name" | awk '{print tolower($0)}')
+schema_path=/$(echo "$id" | sed 's#\.#/#g')/
+
+if [ 0 -lt $(cp -rp .valagtk $destination/$lower) ]; then
+  error "Vala GTK project generation failed. Exiting"
+fi
+
+EXTS=(
+  "vala"
+  "build"
+  "xml"
+  "py"
+)
+
+for ext in "${EXTS[@]}"; do 
+  for f in $(find $lower -name "*.$ext"); do
+    echo -n "Updating $f ..."
+    sed -i "s#{APPLICATION_NAME}#$name#g" $f
+    sed -i "s#{APPLICATION_ID}#$id#g" $f
+    sed -i "s#{APPLICATION_SCHEMA_PATH}#$schema_path#g" $f
+    echo "Done"
+  done
+done
+
+cd $lower && meson build --prefix=/usr
+cd build && sudo ninja install && ./src/$id
+ 
+exit 0
