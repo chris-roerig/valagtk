@@ -2,6 +2,8 @@
 
 This script generates boilerplate for a Vala based GTK+ application. 
 
+![](demo.gif)
+
 ## Features:
 
 * Generated application include:
